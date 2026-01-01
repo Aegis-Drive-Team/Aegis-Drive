@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IP Address Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .sidebar { height: 100vh; }
+        .table-hover tbody tr:hover { background-color: #f1f1f1; }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <nav class="col-md-2 d-none d-md-block bg-white sidebar p-3 shadow-sm">
+            <h4 class="text-primary">IP Manager</h4>
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item"><a class="nav-link" href="/">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/search">Search</a></li>
+                <li class="nav-item"><a class="nav-link" href="/upload">Upload</a></li>
+                <li class="nav-item"><a class="nav-link" href="/report_ip">Report</a></li>
+            </ul>
+            <hr>
+            <small class="text-muted">
+                {% if session.get('username') %}
+                    Logged in as <b>{{ session['username'] }}</b> ({{ session['role'] }})
+                    <br>
+                    <a href="/logout">Logout</a>
+                {% else %}
+                    Not logged in
+                    <br>
+                    <a href="/login">Login</a> |
+                    <a href="/signup">Sign Up</a>
+                {% endif %}
+            </small>
+
+        </nav>
+
+        <!-- Main -->
+        <main class="col-md-10 ms-sm-auto px-4">
+            <!-- Header -->
+            <div class="pt-3 pb-2 mb-4 border-bottom">
+                <h1 class="h2 text-primary">IP Address Management</h1>
+                <p class="text-muted">Track and manage devices and their IP addresses with ease.</p>
+            </div>
+
+            <!-- Search & Actions -->
+            <form method="get" class="d-flex justify-content-between align-items-center mb-3">
+                <input type="text" name="search" class="form-control" style="width: 250px;" 
+                       placeholder="Search by IP or Host..." value="{{ search }}">
+                <div>
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                    {% if session.get('role') == 'admin' %}
+                        <a href="/bulk_import_api" class="btn btn-outline-warning">Bulk Import from API</a>
+                    {% endif %}
+
+                </div>
+            </form>
+<!-- Recently Searched Domains -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Searched Domains</h5>
+        {% if searched_domains and searched_domains|length > 0 %}
+            <ul class="list-group list-group-flush">
+                {% for d in searched_domains %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('search') }}?search={{ d.domain }}">{{ d.domain }}</a>
+                        <small class="text-muted">{{ d.searched_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted mb-0">No domains searched yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+            <!-- Quick Stats -->
+            <div class="row text-center mb-4">
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body">
+                            <h6 class="text-muted">Total IPs</h6>
+                            <h3>{{ records|length }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body">
+                            <h6 class="text-muted">Assigned</h6>
+                            <h3>{{ records|selectattr('status','equalto','assigned')|list|length }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body">
+                            <h6 class="text-muted">Reserved</h6>
+                            <h3>{{ records|selectattr('status','equalto','reserved')|list|length }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body">
+                            <h6 class="text-muted">Networks</h6>
+                            <h3>{{ records|map(attribute='vlan')|unique|list|length }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Device Table -->
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title">Recent IPs</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>IP Address</th>
+                                    <th>Host Name / Domain</th>
+                                    <th>Location / Country</th>
+                                    <th>Notes / Abuse Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in records %}
+                                <tr>
+                                    <td><a href="{{ url_for('ip_details', ip=r.ip) }}"><code>{{ r.ip }}</code></a></td>
+
+                                    <td>{{ r.hostname if r.hostname else (r.domain if r.domain else "N/A") }}</td>
+                                    <td>{{ r.site if r.site else (r.countryCode if r.countryCode else "N/A") }}</td>
+                                    <td>
+                                        {{ r.notes if r.notes else "" }}
+                                        {% if r.abuseConfidenceScore is defined %}
+                                            <small class="text-muted">Score: {{ r.abuseConfidenceScore }}</small>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-muted small">Showing {{ records|length }} devices</p>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+        </main>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("table tbody tr").forEach(row => {
+        const ipLink = row.querySelector("a[href*='/ip/']");
+        if (ipLink) {
+            row.style.cursor = "pointer";
+
+            row.addEventListener("click", function (e) {
+                // Prevent double navigation if clicking actual link
+                if (e.target.tagName.toLowerCase() !== "a") {
+                    window.location = ipLink.href;
+                }
+            });
+        }
+    });
+});
+</script>
+
+</body>
+</html>

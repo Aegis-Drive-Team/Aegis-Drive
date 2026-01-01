@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <title>Search IP Address</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body { background-color: #f8f9fa; }
+        .sidebar { height: 100vh; }
+        .table-hover tbody tr:hover { background-color: #f1f1f1; }
+        details summary {
+        cursor: pointer;
+        font-weight: bold;
+        }
+        details summary::after {
+        content: " ▼";
+        }
+        details[open] summary::after {
+        content: " ▲";
+        } 
+    </style>
+</head>
+
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <nav class="col-md-2 d-none d-md-block bg-white sidebar p-3 shadow-sm">
+            <h4 class="text-primary">IP Manager: Search</h4>
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item"><a class="nav-link" href="/">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/search">Search</a></li>
+                <li class="nav-item"><a class="nav-link" href="/upload">Upload</a></li>
+                <li class="nav-item"><a class="nav-link" href="/report_ip">Report</a></li>
+            </ul>
+            <hr>
+            <small class="text-muted">
+                {% if session.get('username') %}
+                    Logged in as <b>{{ session['username'] }}</b> ({{ session['role'] }})
+                {% else %}
+                    Not logged in
+                {% endif %}
+            </small>
+
+        </nav>
+
+        <!-- Main -->
+        <main class="col-md-10 ms-sm-auto px-4">
+            <!-- Header -->
+            <div class="pt-3 pb-2 mb-4 border-bottom">
+                <h1 class="h2 text-primary">IP Address Management</h1>
+            </div>
+
+            <!-- Search & Actions -->
+            <form method="get" class="d-flex justify-content-between align-items-center mb-3">
+                <input type="text" name="search" class="form-control" style="width: 250px;" 
+                       placeholder="Search by IP..." value="{{ search }}">
+                <div>
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </form>
+            <!-- report Table -->
+            <div class="card shadow-sm border-0 mt-4">
+    <div class="card-body">
+        <h5 class="card-title">IP Details for {{ search }}</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <tbody>
+                    {% for key, value in record.items() %}
+                        {% if key == 'totalReports' %}
+                            <tr>
+                                <td>Reports</td>
+                                <td>
+                                    <details>
+                                        <summary>{{ value }}</summary>
+                                        <ul>
+                                            {% for r in record['reports'] %}
+                                                <li>{{ r.title if r.title else r }} — Reported: {{ r.reportedAt }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </details>
+                                </td>
+                            </tr>
+                        {% elif key == 'reports' %}
+                        {% else %}
+                            <tr>
+                                <td>{{ key }}</td>
+                                <td>{{ value }}</td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+</div>
+</div>
+
+ <div style="height: 50vh; width: 50%;">
+        <canvas id="myChart"></canvas>
+    </div>
+    <!-- Store Flask data as a JavaScript variable -->
+    <script>
+        const labels = JSON.parse('{{ labels | tojson | safe }}');
+        const chartData = JSON.parse('{{ data | tojson | safe }}');
+
+        const data = {
+            labels: labels,
+            datasets: [{
+                label: 'Reports',
+                backgroundColor: 'rgb(255, 99, 132)',
+                borderColor: 'rgb(255, 99, 132)',
+                data: chartData,
+            }]
+        };
+
+        const config = {
+            type: 'line',
+            data: data,
+            options: { maintainAspectRatio: false }
+        };
+
+        const myChart = new Chart(
+            document.getElementById('myChart'),
+            config
+        );
+    </script>           
+            <div class="card shadow-sm border-0 mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Internal Reports for {{ search }}</h5>
+
+            {% if internal_reports and internal_reports|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Source</th>
+                                <th>Reporter</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in internal_reports %}
+                            <tr>
+                                <td>{{ r.category or 'unknown' }}</td>
+                                <td>{{ r.description or '—' }}</td>
+                                <td>{{ r.source or '—' }}</td>
+                                <td>{{ r.reporter_id or '—' }}</td>
+                                <td>{{ r.created_at }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No internal reports found for this IP.</p>
+             {% endif %}
+        </div>
+    </div>
+
+    </main>
+    </div>
+    </body>

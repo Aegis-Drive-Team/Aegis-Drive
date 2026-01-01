@@ -1,0 +1,27 @@
+Use to make sure python installed on putty->
+python3 --version
+
+If NOT installed -> sudo apt-get install python3-venv
+
+go into project folder
+
+create virtual environment-> pyth on3 -m venv venv
+
+Activate virtual environment-> source venv/bin/activate
+
+Install Flask-> pip install flask
+
+---Make sure .env file exist in folder with your abuseipdb key---
+
+Run->
+pip install requests 
+
+pip install python-dotenv
+
+export FLASK_APP=app.py
+
+flask run --host=0.0.0.0
+
+check your IP->hostname -I
+
+website will be-> http://<your IP>:5000
